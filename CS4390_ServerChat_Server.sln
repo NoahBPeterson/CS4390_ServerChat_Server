@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28922.388
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CS4390_ServerChat_Server", "CS4390_ServerChat_Server\CS4390_ServerChat_Server.csproj", "{88BA9C98-89E1-46CB-9996-934A329B80EA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{88BA9C98-89E1-46CB-9996-934A329B80EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88BA9C98-89E1-46CB-9996-934A329B80EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88BA9C98-89E1-46CB-9996-934A329B80EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88BA9C98-89E1-46CB-9996-934A329B80EA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5606D3D8-735A-4999-BB56-79E4C826E46E}
+	EndGlobalSection
+EndGlobal
