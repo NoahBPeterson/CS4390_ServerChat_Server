@@ -12,12 +12,9 @@ namespace CS4390_ServerChat_Server
         static void Main(string[] args)
         {
             UDPConnection udpConnection = new UDPConnection();
-            //while(true)
-            {
-                IPEndPoint client = udpConnection.UDPReceive(); //Assign this its own thread so it doesn't tie up the execution of the whole program.
-                string send = udpConnection.UDPSend(client);
-            }
-            Console.WriteLine("Program exited.");
+            int cookie = udpConnection.UDPReceive(); //Assign this its own thread so it doesn't tie up the execution of the whole program.
+            //client = EndPoint
+            Console.WriteLine("Program exited."+cookie);
             Console.ReadLine();
         }
     }

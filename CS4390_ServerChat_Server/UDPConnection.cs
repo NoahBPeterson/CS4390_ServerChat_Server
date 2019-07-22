@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text;
 
@@ -8,24 +10,18 @@ namespace CS4390_ServerChat_Server
 {
     public class UDPConnection
     {
-        private AsyncCallback recv = null;
-        private State state = new State();
+        Dictionary<string, byte[]> challengeAuthentication = new Dictionary<string, byte[]>();
 
         Socket sock = null;
 
-        public class State
-        {
-            public byte[] buffer = new byte[8192];
-        }
         public UDPConnection()
         {
 
         }
 
 
-        public EndPoint UDPReceive()
+        public int UDPReceive()
         {
-            int serverPort = 10020; //Receiving at port 10020
             string receiveString = "";
 
             EndPoint hostEndPoint = new IPEndPoint(IPAddress.Any, 10020);
@@ -38,49 +34,52 @@ namespace CS4390_ServerChat_Server
                 sock.Bind(hostEndPoint);
                 byte[] receiveBytes = new byte[1024]; //1 KB
 
-                string response = "";
-                //Receive response from server using same socket.
                 while (true)
                 {
                     Console.WriteLine("Waiting!"); //Debugging
                     Int32 receive = sock.ReceiveFrom(receiveBytes, ref clientEndPoint);
                     receiveString += Encoding.ASCII.GetString(receiveBytes);
                     receiveString = receiveString.Substring(0, receive);//Add this data to receiveString
-                    //Console.WriteLine("Received something: "+ receiveString); //Debugging
 
-                    //Client IP:Port debugging: Making sure we are getting client IP:Port
-                    /*int port = ((IPEndPoint)clientEndPoint).Port;
-                    string ipAddr = ((IPEndPoint)clientEndPoint).Address.ToString();
-                    Console.WriteLine("Client ip:port "+ipAddr+":" + port);*/
-
-        
-                    /*while (receive > 0)
+                    if (clientID(receiveString))
                     {
-                        Console.WriteLine("Received something: "+receiveString); //Debugging
-                        receive = sock.ReceiveFrom(receiveBytes, receiveBytes.Length, 0, ref hostEndPoint);
-                        receiveString += Encoding.ASCII.GetString(receiveBytes, receiveBytes.Length, 0);
-                    }*/
-                    if (clientID(receiveString)
+                        int challengeResult = challenge();
+                        byte[] challengeBuffer = challengeHash(challengeResult, receiveString);
+                        challengeAuthentication[receiveString] = challengeBuffer; //Add "ID", challenge to hashmap for later use.
+                        sock.SendTo(challengeBuffer, clientEndPoint);
+                    }else //Change later. If response matches any of the valid authentication responses, respond with cookie and tcp port number
                     {
-                        return clientEndPoint;
+                        string clientID = "";
+                        int responseStart = -1;
+                        for(int i = 0; i < receiveString.Length; i++) //Client sent "[clientID] [challengeResponse]", separate them.
+                        {
+                            if(receiveString[i]!= ' ')
+                            {
+                                clientID += receiveString[i];
+                            }
+                            else
+                            {
+                                responseStart = i + 1;
+                                break;
+                            }
+                        }
+                        Console.WriteLine(clientID);
+                        byte[] clientResponse = Encoding.ASCII.GetBytes(receiveString.Substring(responseStart, receiveString.Length - responseStart)); //Get challenge response, encode in byte[]
+                        byte[] challengeA = challengeAuthentication[clientID]; //Get challenge from hashmap that the client should have independently created
+                        if(clientResponse.Equals(challengeA))    //Authenticate. Send AUTH_SUCCESS(rand_cookie, tcp_port_number)
+                        {
+                            int rand_cookie = challenge();
+                            sock.SendTo(Encoding.ASCII.GetBytes(rand_cookie+" "+10021), clientEndPoint);
+                            Console.WriteLine(rand_cookie + " " + 10021);
+                            return rand_cookie;
+                        }
+                        else     //Do not authenticate. Send AUTH_FAIL
 
-                        //CHALLENGE- TODO later, when doing security.
-                        /*int challengeResult = challenge();
-                        byte[] challengeBuffer = BitConverter.GetBytes(challengeResult);
-                        sock.SendTo(challengeBuffer, clientEndPoint);*/
+                        {
+                            sock.SendTo(Encoding.ASCII.GetBytes("FAILED"), clientEndPoint);
+
+                        }
                     }
-                    if (receiveString == "RESPONSE") //Change later. If response matches any of the valid authentication responses, respond with cookie and tcp port number
-                    {
-                        //Authenticate. Send AUTH_SUCCESS(rand_cookie, tcp_port_number)
-                        //Do not authenticate. Send AUTH_FAIL
-                    }
-
-                    //Send "HELLO" to client using UDP.
-                    string hello = "HELLO";
-                    byte[] buffer = Encoding.ASCII.GetBytes(hello);
-                    sock.SendTo(buffer, clientEndPoint);
-                    receiveBytes = new byte[1024];
-                    receiveString = "";
                 }
 
 
@@ -96,14 +95,13 @@ namespace CS4390_ServerChat_Server
                 Console.WriteLine(e.Message);
             }
 
-            return clientEndPoint; //Return response from server.
+            return -1; //Return response from server.
         }
 
-        public string UDPSend(IPEndPoint client, int tcpPort)
+        public void UDPSend(IPEndPoint client, string message)
         {
-            byte[] tcpPortNumber = BitConverter.GetBytes(tcpPort);
+            byte[] tcpPortNumber = Encoding.ASCII.GetBytes(message);
             sock.SendTo(tcpPortNumber, client);
-            return "";
         }
 
         int challenge()
@@ -121,13 +119,20 @@ namespace CS4390_ServerChat_Server
                 case "noahb":
                     return true;
                 default:
-                    return false;
+                    return true;
             }
         }
 
-        bool challengeAccept(string challenge)
+        string privateKey(string clientID) //Change this later. Text file, clientID : privateKey ?
         {
-            return true;
+            return "password";
+        }
+
+        byte[] challengeHash(int challenge, string clientID)
+        {
+            SHA256 encryptionObject = SHA256.Create();
+            byte[] hash = encryptionObject.ComputeHash(Encoding.ASCII.GetBytes(challenge.ToString() + privateKey(clientID)));
+            return hash;
         }
     }
 }
