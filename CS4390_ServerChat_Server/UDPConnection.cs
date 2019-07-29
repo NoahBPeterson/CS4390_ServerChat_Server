@@ -11,24 +11,24 @@ namespace CS4390_ServerChat_Server
     public class UDPConnection
     {
         Dictionary<string, byte[]> challengeAuthentication = new Dictionary<string, byte[]>();
-
+        Dictionary<string, int> clientRandomCookies;
         Socket sock = null;
 
-        public UDPConnection()
+        public UDPConnection(Dictionary<string, int> clientCookies)
         {
-
+            clientRandomCookies = clientCookies;
         }
 
 
         public int UDPReceive()
         {
-            string receiveString = "";
 
             EndPoint hostEndPoint = new IPEndPoint(IPAddress.Any, 10020);
             EndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
             try
             {
+
                 sock = new Socket(hostEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
                 sock.ReceiveTimeout=1200000;
                 sock.Bind(hostEndPoint);
@@ -36,13 +36,21 @@ namespace CS4390_ServerChat_Server
 
                 while (true)
                 {
+                    string receiveString = "";
                     Console.WriteLine("Waiting!"); //Debugging
                     Int32 receive = sock.ReceiveFrom(receiveBytes, ref clientEndPoint);
                     receiveString += Encoding.ASCII.GetString(receiveBytes);
                     receiveString = receiveString.Substring(0, receive);//Add this data to receiveString
 
+                    string Hello = "";
+                    if (receiveString.Length == 5 && receiveString.Equals("HELLO"))
+                    {
+                        Hello = receiveString;
+                    }
+
                     if (clientID(receiveString))
                     {
+
                         int challengeResult = challenge();
                         byte[] challengeBuffer = challengeHash(challengeResult, receiveString);
                         challengeAuthentication[receiveString] = challengeBuffer; //Add "ID", challenge to hashmap for later use.
@@ -59,24 +67,26 @@ namespace CS4390_ServerChat_Server
                             }
                             else
                             {
-                                responseStart = i + 1;
+                                responseStart = i;
                                 break;
                             }
                         }
-                        Console.WriteLine(clientID);
-                        byte[] clientResponse = Encoding.ASCII.GetBytes(receiveString.Substring(responseStart, receiveString.Length - responseStart)); //Get challenge response, encode in byte[]
+                        string clientChallengeResponse = receiveString.Substring(responseStart + 1, receiveString.Length - (responseStart +1));
+                        byte[] clientResponse = Encoding.ASCII.GetBytes(clientChallengeResponse); //Get challenge response, encode in byte[]
                         byte[] challengeA = challengeAuthentication[clientID]; //Get challenge from hashmap that the client should have independently created
-                        if(clientResponse.Equals(challengeA))    //Authenticate. Send AUTH_SUCCESS(rand_cookie, tcp_port_number)
+                        string ourChallenge = Encoding.ASCII.GetString(challengeA);
+                        if(clientChallengeResponse.Equals(ourChallenge))    //Authenticate. Send AUTH_SUCCESS(rand_cookie, tcp_port_number)
                         {
                             int rand_cookie = challenge();
                             sock.SendTo(Encoding.ASCII.GetBytes(rand_cookie+" "+10021), clientEndPoint);
-                            Console.WriteLine(rand_cookie + " " + 10021);
-                            return rand_cookie;
+                            Console.WriteLine("Rand_cookie + \" \" + 10021:"+rand_cookie + " " + 10021);
+                            clientRandomCookies[clientID] = rand_cookie; //Rand_Cookie now added to dictionary accessible from driver function.
+                            //return rand_cookie;
                         }
                         else     //Do not authenticate. Send AUTH_FAIL
-
                         {
-                            sock.SendTo(Encoding.ASCII.GetBytes("FAILED"), clientEndPoint);
+                            Console.WriteLine("FAIL! Client authentication: "+clientChallengeResponse+" Our authentication: "+ourChallenge);
+                            sock.SendTo(Encoding.ASCII.GetBytes("FAIL"), clientEndPoint);
 
                         }
                     }
@@ -119,7 +129,7 @@ namespace CS4390_ServerChat_Server
                 case "noahb":
                     return true;
                 default:
-                    return true;
+                    return false;
             }
         }
 
@@ -131,7 +141,9 @@ namespace CS4390_ServerChat_Server
         byte[] challengeHash(int challenge, string clientID)
         {
             SHA256 encryptionObject = SHA256.Create();
-            byte[] hash = encryptionObject.ComputeHash(Encoding.ASCII.GetBytes(challenge.ToString() + privateKey(clientID)));
+            string challengeToString = challenge.ToString();
+            byte[] challengeBytes = Encoding.ASCII.GetBytes(challengeToString);
+            byte[] hash = encryptionObject.ComputeHash(Encoding.ASCII.GetBytes(challengeBytes+privateKey(clientID)));
             return hash;
         }
     }
