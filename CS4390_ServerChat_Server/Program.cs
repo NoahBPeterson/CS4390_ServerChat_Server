@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace CS4390_ServerChat_Server
 {
@@ -14,8 +15,10 @@ namespace CS4390_ServerChat_Server
         static void Main(string[] args)
         {
             UDPConnection udpConnection = new UDPConnection(clientCookie);
-            int cookie = udpConnection.UDPReceive(); //Assign this its own thread so it doesn't tie up the execution of the whole program.
-            Console.WriteLine("Program exited."+cookie);
+            Thread thread = new Thread(udpConnection.UDPReceive);
+            thread.Start();
+            thread.Join();
+            Console.WriteLine("Program exited.");
             Console.ReadLine();
         }
     }

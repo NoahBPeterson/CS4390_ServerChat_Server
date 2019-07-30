@@ -20,7 +20,7 @@ namespace CS4390_ServerChat_Server
         }
 
 
-        public int UDPReceive()
+        public void UDPReceive()
         {
 
             EndPoint hostEndPoint = new IPEndPoint(IPAddress.Any, 10020);
@@ -104,8 +104,6 @@ namespace CS4390_ServerChat_Server
             catch (Exception e) {
                 Console.WriteLine(e.Message);
             }
-
-            return -1; //Return response from server.
         }
 
         public void UDPSend(IPEndPoint client, string message)
