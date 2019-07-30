@@ -54,7 +54,8 @@ namespace CS4390_ServerChat_Server
                         int challengeResult = challenge();
                         byte[] challengeBuffer = challengeHash(challengeResult, receiveString);
                         challengeAuthentication[receiveString] = challengeBuffer; //Add "ID", challenge to hashmap for later use.
-                        sock.SendTo(challengeBuffer, clientEndPoint);
+                        byte[] challengeResultBytes = Encoding.ASCII.GetBytes(challengeResult.ToString());
+                        sock.SendTo(challengeResultBytes, clientEndPoint);
                     }else //Change later. If response matches any of the valid authentication responses, respond with cookie and tcp port number
                     {
                         string clientID = "";

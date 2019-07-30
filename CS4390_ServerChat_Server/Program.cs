@@ -16,6 +16,8 @@ namespace CS4390_ServerChat_Server
             UDPConnection udpConnection = new UDPConnection(clientCookie);
             int cookie = udpConnection.UDPReceive(); //Assign this its own thread so it doesn't tie up the execution of the whole program.
             Console.WriteLine("Program exited."+cookie);
+
+
             Console.ReadLine();
         }
     }
