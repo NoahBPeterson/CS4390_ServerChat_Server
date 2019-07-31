@@ -16,17 +16,25 @@ namespace CS4390_ServerChat_Server
         Dictionary<string, int> clientCookies;
         IPEndPoint serverEndpoint;
         Socket ClientSocket;
+        Socket ServerListener;
         public TCPConnection(Dictionary<string, string> privateKeys, Dictionary<string, int> cookies)
         {
             this.privateKeys = privateKeys;
             clientCookies = cookies;
             serverEndpoint = new IPEndPoint(IPAddress.Any, 10021);
-            ;
+            
+        }
+        public TCPConnection(Dictionary<string, string> privateKeys, Dictionary<string, int> cookies, Socket clientSocket) //Used only for threading
+        {
+            this.privateKeys = privateKeys;
+            clientCookies = cookies;
+            serverEndpoint = new IPEndPoint(IPAddress.Any, 10021);
+            ClientSocket = clientSocket;
         }
 
         public void TCPConnect()
         {
-            Socket ServerListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            ServerListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             ServerListener.Bind(serverEndpoint);
             ServerListener.Listen(100);
             Console.WriteLine("TCP Server is Listening...");
@@ -36,6 +44,7 @@ namespace CS4390_ServerChat_Server
             {
                 counter++;
                 clientSocket = ServerListener.Accept();
+                ClientSocket = clientSocket;
                 Console.WriteLine("{0} Clients connected!", counter);
                 byte[] msgs = new byte[1024];
                 int msgSize = clientSocket.Receive(msgs);
@@ -46,6 +55,7 @@ namespace CS4390_ServerChat_Server
                 if (validCookie)
                 {
                     //Make this global so we can remove user threads as people timeout?
+                    //TCPConnection user = new TCPConnection(privateKeys, clientCookies, ClientSocket);
                     Thread UserThreads = new Thread(new ThreadStart(() => User(clientSocket)));
                     send("CONNECTED");
                 }
@@ -56,6 +66,7 @@ namespace CS4390_ServerChat_Server
 
         public void send(string Message)
         {
+
             ClientSocket.Send(System.Text.Encoding.UTF8.GetBytes(Message), 0, Message.Length, SocketFlags.None);
 
         }
@@ -73,7 +84,9 @@ namespace CS4390_ServerChat_Server
             {
                 byte[] msgs = new byte[1024];
                 int size = client.Receive(msgs);
-                client.Send(msgs, 0, size, SocketFlags.None);
+                string clientMessage = Encoding.UTF8.GetString(msgs);
+                client.Send(System.Text.Encoding.UTF8.GetBytes(clientMessage), 0, clientMessage.Length, SocketFlags.None);
+                //client.Send(msgs, 0, size, SocketFlags.None);
             }
         }
 

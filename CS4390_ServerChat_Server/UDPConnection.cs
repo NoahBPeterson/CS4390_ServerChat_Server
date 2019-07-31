@@ -35,11 +35,11 @@ namespace CS4390_ServerChat_Server
                 sock.ReceiveTimeout=1200000;
                 sock.Bind(hostEndPoint);
                 byte[] receiveBytes = new byte[1024]; //1 KB
+                Console.WriteLine("UDP Server is Listening...");
 
                 while (true)
                 {
                     string receiveString = "";
-                    Console.WriteLine("UDP Server is Listening...");
                     Int32 receive = sock.ReceiveFrom(receiveBytes, ref clientEndPoint);
                     receiveString += Encoding.UTF8.GetString(receiveBytes);
                     receiveString = receiveString.Substring(0, receive);//Add this data to receiveString
@@ -69,7 +69,6 @@ namespace CS4390_ServerChat_Server
                         challengeAuthentication[receiveString] = cipher; //Add "ID", challenge to hashmap for later use.
                         byte[] challengeResultBytes = Encoding.UTF8.GetBytes(challengeResult.ToString());
                         sock.SendTo(challengeResultBytes, clientEndPoint); //Send random integer challenge, encoded in UTF8
-                        Console.WriteLine("Int: " +challengeResult+ "\nbyte[]->string: "+Encoding.UTF8.GetString(challengeResultBytes));
                     }
                     else if(clientID(cID)) //Change later. If response matches any of the valid authentication responses, respond with cookie and tcp port number
                     {
@@ -160,7 +159,6 @@ namespace CS4390_ServerChat_Server
             SHA256 encryptionObject = SHA256.Create();
             byte[] hash = encryptionObject.ComputeHash(Encoding.UTF8.GetBytes(cipher));
             string hashString = Encoding.UTF8.GetString(hash);
-            Console.WriteLine("hashString: " + hashString);
             return hash;
         }
     }
