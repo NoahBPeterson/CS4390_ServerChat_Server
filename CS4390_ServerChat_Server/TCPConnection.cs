@@ -40,6 +40,8 @@ namespace CS4390_ServerChat_Server
             Console.WriteLine("TCP Server is Listening...");
             Socket clientSocket = default(Socket);
             int counter = 0;
+            Thread userThread;
+
             while (true)
             {
                 counter++;
@@ -55,8 +57,10 @@ namespace CS4390_ServerChat_Server
                 if (validCookie)
                 {
                     //Make this global so we can remove user threads as people timeout?
-                    //TCPConnection user = new TCPConnection(privateKeys, clientCookies, ClientSocket);
-                    Thread UserThreads = new Thread(new ThreadStart(() => User(clientSocket)));
+                    TCPConnection user = new TCPConnection(privateKeys, clientCookies, ClientSocket);
+                    //Thread UserThreads = new Thread(new ThreadStart(() => User(clientSocket)));
+                    userThread = new Thread(user.User);
+                    userThread.Start();
                     send("CONNECTED");
                 }
 
@@ -78,13 +82,14 @@ namespace CS4390_ServerChat_Server
             return System.Text.Encoding.UTF8.GetString(msgFromServer, 0, size);
         }
 
-        public void User(Socket client)
+        public void User()//(Socket Client)
         {
             while (true)
             {
+                Socket client = ClientSocket;
                 byte[] msgs = new byte[1024];
                 int size = client.Receive(msgs);
-                string clientMessage = Encoding.UTF8.GetString(msgs);
+                string clientMessage = Encoding.UTF8.GetString(msgs).TrimEnd(new char[] { (char)0 });
                 client.Send(System.Text.Encoding.UTF8.GetBytes(clientMessage), 0, clientMessage.Length, SocketFlags.None);
                 //client.Send(msgs, 0, size, SocketFlags.None);
             }
