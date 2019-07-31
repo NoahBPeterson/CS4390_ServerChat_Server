@@ -44,7 +44,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-	<Compile Include="UDPConnection.cs" />
+    <Compile Include="TCPConnection.cs" />
+    <Compile Include="UDPConnection.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
