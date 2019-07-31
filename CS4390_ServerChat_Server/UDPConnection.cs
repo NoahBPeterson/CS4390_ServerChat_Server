@@ -39,7 +39,7 @@ namespace CS4390_ServerChat_Server
                     string receiveString = "";
                     Console.WriteLine("Waiting!"); //Debugging
                     Int32 receive = sock.ReceiveFrom(receiveBytes, ref clientEndPoint);
-                    receiveString += Encoding.ASCII.GetString(receiveBytes);
+                    receiveString += Encoding.UTF8.GetString(receiveBytes);
                     receiveString = receiveString.Substring(0, receive);//Add this data to receiveString
 
                     string Hello = "";
@@ -54,7 +54,7 @@ namespace CS4390_ServerChat_Server
                         int challengeResult = challenge();
                         byte[] challengeBuffer = challengeHash(challengeResult, receiveString);
                         challengeAuthentication[receiveString] = challengeBuffer; //Add "ID", challenge to hashmap for later use.
-                        byte[] challengeResultBytes = Encoding.ASCII.GetBytes(challengeResult.ToString());
+                        byte[] challengeResultBytes = Encoding.UTF8.GetBytes(challengeResult.ToString());
                         sock.SendTo(challengeResultBytes, clientEndPoint);
                     }else //Change later. If response matches any of the valid authentication responses, respond with cookie and tcp port number
                     {
@@ -73,13 +73,13 @@ namespace CS4390_ServerChat_Server
                             }
                         }
                         string clientChallengeResponse = receiveString.Substring(responseStart + 1, receiveString.Length - (responseStart +1));
-                        byte[] clientResponse = Encoding.ASCII.GetBytes(clientChallengeResponse); //Get challenge response, encode in byte[]
+                        byte[] clientResponse = Encoding.UTF8.GetBytes(clientChallengeResponse); //Get challenge response, encode in byte[]
                         byte[] challengeA = challengeAuthentication[clientID]; //Get challenge from hashmap that the client should have independently created
-                        string ourChallenge = Encoding.ASCII.GetString(challengeA);
+                        string ourChallenge = Encoding.UTF8.GetString(challengeA);
                         if(clientChallengeResponse.Equals(ourChallenge))    //Authenticate. Send AUTH_SUCCESS(rand_cookie, tcp_port_number)
                         {
                             int rand_cookie = challenge();
-                            sock.SendTo(Encoding.ASCII.GetBytes(rand_cookie+" "+10021), clientEndPoint);
+                            sock.SendTo(Encoding.UTF8.GetBytes(rand_cookie+" "+10021), clientEndPoint);
                             Console.WriteLine("Rand_cookie + \" \" + 10021:"+rand_cookie + " " + 10021);
                             clientRandomCookies[clientID] = rand_cookie; //Rand_Cookie now added to dictionary accessible from driver function.
                             //return rand_cookie;
@@ -87,7 +87,7 @@ namespace CS4390_ServerChat_Server
                         else     //Do not authenticate. Send AUTH_FAIL
                         {
                             Console.WriteLine("FAIL! Client authentication: "+clientChallengeResponse+" Our authentication: "+ourChallenge);
-                            sock.SendTo(Encoding.ASCII.GetBytes("FAIL"), clientEndPoint);
+                            sock.SendTo(Encoding.UTF8.GetBytes("FAIL"), clientEndPoint);
 
                         }
                     }
@@ -111,7 +111,7 @@ namespace CS4390_ServerChat_Server
 
         public void UDPSend(IPEndPoint client, string message)
         {
-            byte[] tcpPortNumber = Encoding.ASCII.GetBytes(message);
+            byte[] tcpPortNumber = Encoding.UTF8.GetBytes(message);
             sock.SendTo(tcpPortNumber, client);
         }
 
@@ -143,8 +143,8 @@ namespace CS4390_ServerChat_Server
         {
             SHA256 encryptionObject = SHA256.Create();
             string challengeToString = challenge.ToString();
-            byte[] challengeBytes = Encoding.ASCII.GetBytes(challengeToString);
-            byte[] hash = encryptionObject.ComputeHash(Encoding.ASCII.GetBytes(challengeBytes+privateKey(clientID)));
+            byte[] challengeBytes = Encoding.UTF8.GetBytes(challengeToString);
+            byte[] hash = encryptionObject.ComputeHash(Encoding.UTF8.GetBytes(challengeBytes+privateKey(clientID)));
             return hash;
         }
     }
