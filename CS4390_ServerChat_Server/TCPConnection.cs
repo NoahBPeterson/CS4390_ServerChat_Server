@@ -12,13 +12,16 @@ namespace CS4390_ServerChat_Server
 {
     class TCPConnection
     {
+        Dictionary<string, string> privateKeys;
         Dictionary<string, int> clientCookies;
         IPEndPoint serverEndpoint;
         Socket ClientSocket;
-        public TCPConnection(IPEndPoint server, Dictionary<string, int> cookies)
+        public TCPConnection(Dictionary<string, string> privateKeys, Dictionary<string, int> cookies)
         {
+            this.privateKeys = privateKeys;
             clientCookies = cookies;
-            serverEndpoint = server;
+            serverEndpoint = new IPEndPoint(IPAddress.Any, 10021);
+            ;
         }
 
         public void TCPConnect()
@@ -26,7 +29,7 @@ namespace CS4390_ServerChat_Server
             Socket ServerListener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             ServerListener.Bind(serverEndpoint);
             ServerListener.Listen(100);
-            Console.WriteLine("Server is Listening...");
+            Console.WriteLine("TCP Server is Listening...");
             Socket clientSocket = default(Socket);
             int counter = 0;
             while (true)

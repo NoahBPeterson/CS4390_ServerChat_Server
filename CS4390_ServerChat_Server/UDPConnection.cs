@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
@@ -10,12 +11,13 @@ namespace CS4390_ServerChat_Server
 {
     public class UDPConnection
     {
-        Dictionary<string, byte[]> challengeAuthentication = new Dictionary<string, byte[]>();
+        Dictionary<string, string> challengeAuthentication;
         Dictionary<string, int> clientRandomCookies;
         Socket sock = null;
 
-        public UDPConnection(Dictionary<string, int> clientCookies)
+        public UDPConnection(Dictionary<string, string> cipherKeys, Dictionary<string, int> clientCookies)
         {
+            challengeAuthentication = cipherKeys;
             clientRandomCookies = clientCookies;
         }
 
@@ -37,15 +39,24 @@ namespace CS4390_ServerChat_Server
                 while (true)
                 {
                     string receiveString = "";
-                    Console.WriteLine("Waiting!"); //Debugging
+                    Console.WriteLine("UDP Server is Listening...");
                     Int32 receive = sock.ReceiveFrom(receiveBytes, ref clientEndPoint);
                     receiveString += Encoding.UTF8.GetString(receiveBytes);
                     receiveString = receiveString.Substring(0, receive);//Add this data to receiveString
 
-                    string Hello = "";
-                    if (receiveString.Length == 5 && receiveString.Equals("HELLO"))
+                    string cID = "";
+                    int responseStart = -1;
+                    for (int i = 0; i < receiveString.Length; i++) //Client sent "[clientID] [challengeResponse]", separate them.
                     {
-                        Hello = receiveString;
+                        if (receiveString[i] != ' ')
+                        {
+                            cID += receiveString[i];
+                        }
+                        else
+                        {
+                            responseStart = i;
+                            break;
+                        }
                     }
 
                     if (clientID(receiveString))
@@ -53,40 +64,28 @@ namespace CS4390_ServerChat_Server
 
                         int challengeResult = challenge();
                         byte[] challengeBuffer = challengeHash(challengeResult, receiveString);
-                        challengeAuthentication[receiveString] = challengeBuffer; //Add "ID", challenge to hashmap for later use.
+                        string challengeString = Encoding.UTF8.GetString(challengeBuffer);
+                        challengeAuthentication[receiveString] = challengeString; //Add "ID", challenge to hashmap for later use.
                         byte[] challengeResultBytes = Encoding.UTF8.GetBytes(challengeResult.ToString());
-                        sock.SendTo(challengeResultBytes, clientEndPoint);
-                    }else //Change later. If response matches any of the valid authentication responses, respond with cookie and tcp port number
+                        sock.SendTo(challengeResultBytes, clientEndPoint); //Send random integer challenge, encoded in UTF8
+                    }else if(clientID(cID)) //Change later. If response matches any of the valid authentication responses, respond with cookie and tcp port number
                     {
-                        string clientID = "";
-                        int responseStart = -1;
-                        for(int i = 0; i < receiveString.Length; i++) //Client sent "[clientID] [challengeResponse]", separate them.
-                        {
-                            if(receiveString[i]!= ' ')
-                            {
-                                clientID += receiveString[i];
-                            }
-                            else
-                            {
-                                responseStart = i;
-                                break;
-                            }
-                        }
                         string clientChallengeResponse = receiveString.Substring(responseStart + 1, receiveString.Length - (responseStart +1));
                         byte[] clientResponse = Encoding.UTF8.GetBytes(clientChallengeResponse); //Get challenge response, encode in byte[]
-                        byte[] challengeA = challengeAuthentication[clientID]; //Get challenge from hashmap that the client should have independently created
-                        string ourChallenge = Encoding.UTF8.GetString(challengeA);
+                        string ourChallenge;
+                        challengeAuthentication.TryGetValue(cID, out ourChallenge); //Get challenge from hashmap that the client should have independently created
+                        //string ourChallenge = Encoding.UTF8.GetString(challengeA);
                         if(clientChallengeResponse.Equals(ourChallenge))    //Authenticate. Send AUTH_SUCCESS(rand_cookie, tcp_port_number)
                         {
                             int rand_cookie = challenge();
                             sock.SendTo(Encoding.UTF8.GetBytes(rand_cookie+" "+10021), clientEndPoint);
                             Console.WriteLine("Rand_cookie + \" \" + 10021:"+rand_cookie + " " + 10021);
-                            clientRandomCookies[clientID] = rand_cookie; //Rand_Cookie now added to dictionary accessible from driver function.
+                            clientRandomCookies[cID] = rand_cookie; //Rand_Cookie now added to dictionary accessible from driver function.
                             //return rand_cookie;
                         }
                         else     //Do not authenticate. Send AUTH_FAIL
                         {
-                            Console.WriteLine("FAIL! Client authentication: "+clientChallengeResponse+" Our authentication: "+ourChallenge);
+                            Console.WriteLine("FAIL! Client authentication: "+clientChallengeResponse+"\nOur authentication: "+ourChallenge);
                             sock.SendTo(Encoding.UTF8.GetBytes("FAIL"), clientEndPoint);
 
                         }
@@ -109,8 +108,8 @@ namespace CS4390_ServerChat_Server
 
         public void UDPSend(IPEndPoint client, string message)
         {
-            byte[] tcpPortNumber = Encoding.UTF8.GetBytes(message);
-            sock.SendTo(tcpPortNumber, client);
+            byte[] msg = Encoding.UTF8.GetBytes(message);
+            sock.SendTo(msg, client);
         }
 
         int challenge()
@@ -119,22 +118,34 @@ namespace CS4390_ServerChat_Server
             return rng.Next();
         }
 
-        //This function checks the client ID to verify if it's valid.
-        //Is it acceptable to hardcode IDs, or should we have a text file of a list of acceptable IDs?
         bool clientID(string clientID) 
         {
-            switch(clientID)
+            StreamReader streamReader = new StreamReader("users.txt");
+            string line;
+            string[] split;
+            do
             {
-                case "noahb":
-                    return true;
-                default:
-                    return false;
-            }
+                line = streamReader.ReadLine();
+                split = line.Split(' ');
+
+                if (split[0].Equals(clientID)) return true;
+            } while (split[0] != clientID && !streamReader.EndOfStream);
+            streamReader.Close();
+            return false;
         }
 
-        string privateKey(string clientID) //Change this later. Text file, clientID : privateKey ?
+        string privateKey(string clientID)
         {
-            return "password";
+            StreamReader streamReader = new StreamReader("users.txt");
+            string line = streamReader.ReadLine();
+            string[] split = line.Split(' ');
+            while(!split[0].Equals(clientID))
+            {
+                line = streamReader.ReadLine();
+                split = line.Split(' ');
+            }
+            streamReader.Close();
+            return split[1];
         }
 
         byte[] challengeHash(int challenge, string clientID)
