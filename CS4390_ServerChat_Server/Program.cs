@@ -11,13 +11,14 @@ namespace CS4390_ServerChat_Server
 {
     class Program
     {
-        static Dictionary<string, string> challengeAuthentication = new Dictionary<string, string>();
-        static Dictionary<string, int> clientCookie = new Dictionary<string, int>();
+        Dictionary<string, string> challengeAuthentication = new Dictionary<string, string>();
+        Dictionary<string, int> clientCookie = new Dictionary<string, int>();
 
         static void Main(string[] args)
         {
-            UDPConnection udpConnection = new UDPConnection(challengeAuthentication, clientCookie);
-            TCPConnection tcpConnection = new TCPConnection(challengeAuthentication, clientCookie);
+            Program nonStatic = new Program();
+            UDPConnection udpConnection = new UDPConnection(nonStatic.challengeAuthentication, nonStatic.clientCookie);
+            TCPConnection tcpConnection = new TCPConnection(nonStatic.challengeAuthentication, nonStatic.clientCookie);
             Thread udp = new Thread(udpConnection.UDPReceive);
             Thread tcp = new Thread(tcpConnection.TCPConnect);
             udp.Start();
