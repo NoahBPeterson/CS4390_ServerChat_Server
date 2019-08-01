@@ -52,8 +52,7 @@ namespace CS4390_ServerChat_Server
                 ClientSocket = clientSocket;
                 Console.WriteLine("{0} Clients connected!", counter);
                 byte[] msgs = new byte[1024];
-                int msgSize = clientSocket.Receive(msgs);
-                string receivedMessage = Encoding.UTF8.GetString(msgs); //Should be rand_cookie
+                string receivedMessage = receivePlain(); //Should be rand_cookie
                 string clientID;
                 //Verify that receivedMessage is a valid client cookie
                 bool validCookie = clientCookies.TryGetValue(Int32.Parse(receivedMessage), out clientID);//clientCookies.ContainsValue(Int32.Parse(receivedMessage));
@@ -66,7 +65,6 @@ namespace CS4390_ServerChat_Server
                     //Thread UserThreads = new Thread(new ThreadStart(() => User(clientSocket)));
                     userThread = new Thread(user.User);
                     userThread.Start();
-                    send(Encryption.Encrypt("CONNECTED", privateKeys[clientID]));
                 }
 
 
@@ -75,34 +73,34 @@ namespace CS4390_ServerChat_Server
 
         public void send(string Message)
         {
-
-            ClientSocket.Send(System.Text.Encoding.UTF8.GetBytes(Message), 0, Message.Length, SocketFlags.None);
-
-        }
-
-        public void send(byte[] data) {
-            ClientSocket.Send(data);
+            ClientSocket.Send(Encryption.Encrypt(Message, privateKeys[clientID]));
         }
 
         public string receive()
         {
             byte[] msgFromServer = new byte[1024];
             int size = ClientSocket.Receive(msgFromServer);
-            return System.Text.Encoding.UTF8.GetString(msgFromServer, 0, size);
+            byte[] msg = new byte[size];
+            Array.Copy(msgFromServer, msg, size);
+            return Encryption.Decrypt(msg, privateKeys[clientID]);
+        }
+
+        public string receivePlain() {
+            byte[] msgFromServer = new byte[1024];
+            int size = ClientSocket.Receive(msgFromServer);
+            return Encoding.UTF8.GetString(msgFromServer, 0, size);
         }
 
         public void User()//(Socket Client)
         {
+            send("CONNECTED");
             try
             {
                 while (true)
                 {
                     Socket client = ClientSocket;
-                    byte[] msgs = new byte[1024];
-                    int size = client.Receive(msgs);
-                    string clientMessage = Encoding.UTF8.GetString(msgs).TrimEnd(new char[] { (char)0 });
-                    byte[] cipherBytes = Encryption.Encrypt(clientMessage, privateKeys[clientID]);
-                    client.Send(cipherBytes, 0, cipherBytes.Length, SocketFlags.None);
+                    string message = receive();
+                    send(message);
                 }
             }
             catch (SocketException e)
