@@ -85,6 +85,8 @@ namespace CS4390_ServerChat_Server
         {
             TCPConnection clientB = cIDtoTCP[chattingWith];
             clientB.send(message);
+            ChatHistory chat = new ChatHistory(clientID, clientB.clientID);
+            chat.addLine(message);
         }
 
         public string receive()
@@ -112,22 +114,17 @@ namespace CS4390_ServerChat_Server
                 TCPConnection clientB = null;
                 while (true)
                 {
-                    Socket client = ClientSocket;
-                    byte[] msgs = new byte[1024];
-                    int size = client.Receive(msgs);
-                    string clientMessage = Encoding.UTF8.GetString(msgs).TrimEnd(new char[] { (char)0 });
+                    string clientMessage = receive();
                     if(commandHistory(clientMessage) != null)
                     {
-                        byte[] ciphered = Encryption.Encrypt(commandHistory(clientMessage), privateKeys[clientID]);
-                        client.Send(ciphered, 0, ciphered.Length, SocketFlags.None);
+                        send(commandHistory(clientMessage));
                     }else if(commandChat(clientMessage)!=null)
                     {
                         clientB = commandChat(clientMessage);
                     }
                     else if(!chatting)
                     {
-                        byte[] cipherBytes = Encryption.Encrypt((clientID+": "+clientMessage), privateKeys[clientID]);
-                        client.Send(cipherBytes, 0, cipherBytes.Length, SocketFlags.None);
+                        send(clientMessage);
                     }
                     if(chatting)
                     {
@@ -147,13 +144,19 @@ namespace CS4390_ServerChat_Server
             {
                 Console.WriteLine(e.Message);
                 clientIDSocket.Remove(clientID);
-                tearConnection(cIDtoTCP[chattingWith]);
+                if(chatting)
+                {
+                    tearConnection(cIDtoTCP[chattingWith]);
+                }
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 clientIDSocket.Remove(clientID);
-                tearConnection(cIDtoTCP[chattingWith]);
+                if (chatting)
+                {
+                    tearConnection(cIDtoTCP[chattingWith]);
+                }
             }
         }
 
@@ -162,6 +165,7 @@ namespace CS4390_ServerChat_Server
             string[] firstSpace = stringSplit(command);
             if (firstSpace[0].ToLower().Equals("history"))
             {
+                Console.WriteLine("Requesting: " + clientID + " with clientB: \"" + firstSpace[1]+"\"");
                 ChatHistory chatHistory = new ChatHistory(clientID, firstSpace[1]);
                 string chats = chatHistory.chatHistory();
                 if(chats!=null)
