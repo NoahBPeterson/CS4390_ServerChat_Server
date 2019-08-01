@@ -81,6 +81,12 @@ namespace CS4390_ServerChat_Server
             ClientSocket.Send(Encryption.Encrypt(Message, privateKeys[clientID]));
         }
 
+        public void sendChat(string message)
+        {
+            TCPConnection clientB = cIDtoTCP[chattingWith];
+            clientB.send(message);
+        }
+
         public string receive()
         {
             byte[] msgFromServer = new byte[1024];
@@ -117,12 +123,23 @@ namespace CS4390_ServerChat_Server
                     }else if(commandChat(clientMessage)!=null)
                     {
                         clientB = commandChat(clientMessage);
-                        //Do something if "Chat (client-id-b) is sent."
                     }
-                    else
+                    else if(!chatting)
                     {
-                        byte[] cipherBytes = Encryption.Encrypt(clientMessage, privateKeys[clientID]);
+                        byte[] cipherBytes = Encryption.Encrypt((clientID+": "+clientMessage), privateKeys[clientID]);
                         client.Send(cipherBytes, 0, cipherBytes.Length, SocketFlags.None);
+                    }
+                    if(chatting)
+                    {
+                        if(logOff(clientMessage))
+                        {
+                            //send log off message
+                        }
+                        else
+                        {
+                            sendChat(clientID + ": " + clientMessage);
+                            send(clientID + ": " + clientMessage);
+                        }
                     }
                 }
             }
@@ -130,11 +147,13 @@ namespace CS4390_ServerChat_Server
             {
                 Console.WriteLine(e.Message);
                 clientIDSocket.Remove(clientID);
+                tearConnection(cIDtoTCP[chattingWith]);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
                 clientIDSocket.Remove(clientID);
+                tearConnection(cIDtoTCP[chattingWith]);
             }
         }
 
@@ -168,14 +187,43 @@ namespace CS4390_ServerChat_Server
                     cIDtoTCP.TryGetValue(firstSpace[1], out clientB);
                     if (clientB != null)
                     {
-                        if(clientB.chattingWith==null || clientB.chattingWith.Equals(clientID))
+                        if(clientB.chattingWith==null || clientB.chattingWith.Equals(clientID) || clientB.chatting==false)
                         {
+                            setupConnection(clientB);
                             return clientB;
                         }
                     }
                 }
             }
             return null;
+        }
+
+        void setupConnection(TCPConnection clientB)
+        {
+            clientB.chattingWith = clientID;
+            clientB.chatting = true;
+            chattingWith = clientB.clientID;
+            chatting = true;
+        }
+        void tearConnection(TCPConnection clientB)
+        {
+            if(chatting)
+            {
+                clientB.chattingWith = "";
+                clientB.chatting = false;
+                chatting = false;
+                chattingWith = "";
+            }
+        }
+
+        bool logOff(string command)
+        {
+            if(command.ToLower().Equals("log off"))
+            {
+                tearConnection(cIDtoTCP[chattingWith]);
+                return true;
+            }
+            return false;
         }
 
         string[] stringSplit(string line)
