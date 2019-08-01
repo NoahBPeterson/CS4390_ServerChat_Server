@@ -19,11 +19,12 @@ namespace CS4390_ServerChat_Server
         Socket ClientSocket;
         Socket ServerListener;
         string clientID;
-        public TCPConnection(Dictionary<string, string> privateKeys, Dictionary<int, string> cookies)
+        public TCPConnection(Dictionary<string, string> privateKeys, Dictionary<int, string> cookies, Dictionary<string, Socket> clientIDSocket)
         {
             this.privateKeys = privateKeys;
             clientCookies = cookies;
             serverEndpoint = new IPEndPoint(IPAddress.Any, 10021);
+            this.clientIDSocket = clientIDSocket;
         }
         public TCPConnection(Dictionary<string, string> privateKeys, Dictionary<int, string> cookies, Socket clientSocket, Dictionary<string, Socket> clientIDSocket, string cID) //Used only for threading
         {
