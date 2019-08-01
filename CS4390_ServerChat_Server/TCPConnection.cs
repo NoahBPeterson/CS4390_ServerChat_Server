@@ -66,7 +66,7 @@ namespace CS4390_ServerChat_Server
                     //Thread UserThreads = new Thread(new ThreadStart(() => User(clientSocket)));
                     userThread = new Thread(user.User);
                     userThread.Start();
-                    send("CONNECTED");
+                    send(Encryption.Encrypt("CONNECTED", privateKeys[clientID]));
                 }
 
 
@@ -78,6 +78,10 @@ namespace CS4390_ServerChat_Server
 
             ClientSocket.Send(System.Text.Encoding.UTF8.GetBytes(Message), 0, Message.Length, SocketFlags.None);
 
+        }
+
+        public void send(byte[] data) {
+            ClientSocket.Send(data);
         }
 
         public string receive()
