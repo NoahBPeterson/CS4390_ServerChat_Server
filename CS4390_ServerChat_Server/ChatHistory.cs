@@ -29,11 +29,14 @@ namespace CS4390_ServerChat_Server
 
         public string chatHistory()
         {
+            if (!File.Exists(fileName))
+            {
+                return null;
+            }
             StreamReader streamReader = new StreamReader(fileName);
             string allData = streamReader.ReadToEnd();
             streamReader.Close();
             return allData;
-
         }
 
         public void addLine(string chatMessage)
