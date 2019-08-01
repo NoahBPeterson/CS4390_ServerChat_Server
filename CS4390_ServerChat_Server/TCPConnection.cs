@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -65,7 +64,7 @@ namespace CS4390_ServerChat_Server
                     //Make this global so we can remove user threads as people timeout?
                     TCPConnection user = new TCPConnection(privateKeys, clientCookies, ClientSocket, clientIDSocket,  clientID);
                     //Thread UserThreads = new Thread(new ThreadStart(() => User(clientSocket)));
-                    userThread = new Thread(user.User);
+                    userThread = new Thread(() => user.User(clientID));
                     userThread.Start();
                     send("CONNECTED");
                 }
@@ -88,7 +87,7 @@ namespace CS4390_ServerChat_Server
             return System.Text.Encoding.UTF8.GetString(msgFromServer, 0, size);
         }
 
-        public void User()//(Socket Client)
+        public void User(string clientID)//(Socket Client)
         {
             try
             {
@@ -98,7 +97,8 @@ namespace CS4390_ServerChat_Server
                     byte[] msgs = new byte[1024];
                     int size = client.Receive(msgs);
                     string clientMessage = Encoding.UTF8.GetString(msgs).TrimEnd(new char[] { (char)0 });
-                    client.Send(System.Text.Encoding.UTF8.GetBytes(clientMessage), 0, clientMessage.Length, SocketFlags.None);
+                    byte[] cipherBytes = Encryption.Encrypt(clientMessage, privateKeys[clientID]);
+                    client.Send(cipherBytes, 0, cipherBytes.Length, SocketFlags.None);
                 }
             }
             catch (SocketException e)
@@ -112,47 +112,5 @@ namespace CS4390_ServerChat_Server
                 clientIDSocket.Remove(clientID);
             }
         }
-
-        public string Encrypt(string messageSent, string Cipher)
-        {
-            using (var CryptoMD5 = new MD5CryptoServiceProvider())
-            {
-                using (var TripleDES = new TripleDESCryptoServiceProvider())
-                {
-                    TripleDES.Key = CryptoMD5.ComputeHash(UTF8Encoding.UTF8.GetBytes(Cipher));
-                    TripleDES.Mode = CipherMode.ECB;
-                    TripleDES.Padding = PaddingMode.PKCS7;
-
-                    using (var crypt = TripleDES.CreateEncryptor())
-                    {
-                        byte[] messageBytes = UTF8Encoding.UTF8.GetBytes(messageSent);
-                        byte[] totalBytes = crypt.TransformFinalBlock(messageBytes, 0, messageBytes.Length);
-                        return Convert.ToBase64String(totalBytes, 0, totalBytes.Length);
-                    }
-                }
-            }
-        }
-
-        public string Decrypt(string encryptedMessage, string Cipher)
-        {
-            using (var CryptoMD5 = new MD5CryptoServiceProvider())
-            {
-                using (var TripleDES = new TripleDESCryptoServiceProvider())
-                {
-                    TripleDES.Key = CryptoMD5.ComputeHash(UTF8Encoding.UTF8.GetBytes(Cipher));
-                    TripleDES.Mode = CipherMode.ECB;
-                    TripleDES.Padding = PaddingMode.PKCS7;
-
-                    using (var crypt = TripleDES.CreateDecryptor())
-                    {
-                        byte[] cipherBytes = Convert.FromBase64String(encryptedMessage);
-                        byte[] totalBytes = crypt.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
-                        return UTF8Encoding.UTF8.GetString(totalBytes);
-                    }
-                }
-            }
-        }
     }
-
-
 }
