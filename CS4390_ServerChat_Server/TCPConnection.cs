@@ -115,29 +115,33 @@ namespace CS4390_ServerChat_Server
                 while (true)
                 {
                     string clientMessage = receive();
-                    if(commandHistory(clientMessage) != null)
+                    string[] split = stringSplit(clientMessage);
+                    if (chatting && split[0].Equals("CHAT"))
                     {
-                        send(commandHistory(clientMessage));
-                    }else if(commandChat(clientMessage)!=null)
-                    {
-                        clientB = commandChat(clientMessage);
-                    }
-                    else if(!chatting)
-                    {
-                        send(clientMessage);
-                    }
-                    if(chatting)
-                    {
-                        if(logOff(clientMessage))
+                        if (logOff(clientMessage))
                         {
                             //send log off message
                         }
                         else
                         {
-                            sendChat(clientID + ": " + clientMessage);
-                            send(clientID + ": " + clientMessage);
+                            sendChat(clientID + ": " + split[1]);
+                            send(clientID + ": " + split[1]);
                         }
                     }
+                    if (commandHistory(clientMessage) != null)
+                    {
+                        send(commandHistory(clientMessage));
+                    }else if(commandChat(clientMessage)!=null)
+                    {
+                        clientB = commandChat(clientMessage);
+                        send("CHAT_STARTED " + clientB.clientID);
+                        sendChat("CHAT_STARTED " + clientID);
+                    }
+                    else if(!chatting)
+                    {
+                        send(clientMessage);
+                    }
+
                 }
             }
             catch (SocketException e)
