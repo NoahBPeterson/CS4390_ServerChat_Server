@@ -84,7 +84,8 @@ namespace CS4390_ServerChat_Server
                         if (serverChallengeString.Equals(clientResponseString))    //Authenticate. Send AUTH_SUCCESS(rand_cookie, tcp_port_number)
                         {
                             int rand_cookie = challenge();
-                            sock.SendTo(Encoding.UTF8.GetBytes(rand_cookie+" "+10021), clientEndPoint);
+                            string cookie_port = Encrypt(rand_cookie.ToString() + " " + 10021, serverChallenge); //cipher: rand+password, '+' is concatenation.
+                            sock.SendTo(Encoding.UTF8.GetBytes(cookie_port), clientEndPoint);
                             Console.WriteLine("Rand_cookie + \" \" + 10021:"+rand_cookie + " " + 10021);
                             clientRandomCookies[cID] = rand_cookie; //Rand_Cookie now added to dictionary accessible from driver function.
                             //return rand_cookie;
@@ -160,6 +161,46 @@ namespace CS4390_ServerChat_Server
             byte[] hash = encryptionObject.ComputeHash(Encoding.UTF8.GetBytes(cipher));
             string hashString = Encoding.UTF8.GetString(hash);
             return hash;
+        }
+
+        public string Encrypt(string messageSent, string Cipher)
+        {
+            using (var CryptoMD5 = new MD5CryptoServiceProvider())
+            {
+                using (var TripleDES = new TripleDESCryptoServiceProvider())
+                {
+                    TripleDES.Key = CryptoMD5.ComputeHash(UTF8Encoding.UTF8.GetBytes(Cipher));
+                    TripleDES.Mode = CipherMode.ECB;
+                    TripleDES.Padding = PaddingMode.PKCS7;
+
+                    using (var crypt = TripleDES.CreateEncryptor())
+                    {
+                        byte[] messageBytes = UTF8Encoding.UTF8.GetBytes(messageSent);
+                        byte[] totalBytes = crypt.TransformFinalBlock(messageBytes, 0, messageBytes.Length);
+                        return Convert.ToBase64String(totalBytes, 0, totalBytes.Length);
+                    }
+                }
+            }
+        }
+
+        public string Decrypt(string encryptedMessage, string Cipher)
+        {
+            using (var CryptoMD5 = new MD5CryptoServiceProvider())
+            {
+                using (var TripleDES = new TripleDESCryptoServiceProvider())
+                {
+                    TripleDES.Key = CryptoMD5.ComputeHash(UTF8Encoding.UTF8.GetBytes(Cipher));
+                    TripleDES.Mode = CipherMode.ECB;
+                    TripleDES.Padding = PaddingMode.PKCS7;
+
+                    using (var crypt = TripleDES.CreateDecryptor())
+                    {
+                        byte[] cipherBytes = Convert.FromBase64String(encryptedMessage);
+                        byte[] totalBytes = crypt.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
+                        return UTF8Encoding.UTF8.GetString(totalBytes);
+                    }
+                }
+            }
         }
     }
 }

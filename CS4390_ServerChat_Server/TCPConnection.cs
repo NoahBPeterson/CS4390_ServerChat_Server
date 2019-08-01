@@ -84,18 +84,33 @@ namespace CS4390_ServerChat_Server
 
         public void User()//(Socket Client)
         {
-            while (true)
+            try
             {
-                Socket client = ClientSocket;
-                byte[] msgs = new byte[1024];
-                int size = client.Receive(msgs);
-                string clientMessage = Encoding.UTF8.GetString(msgs).TrimEnd(new char[] { (char)0 });
-                client.Send(System.Text.Encoding.UTF8.GetBytes(clientMessage), 0, clientMessage.Length, SocketFlags.None);
-                //client.Send(msgs, 0, size, SocketFlags.None);
+                while (true)
+                {
+                    Socket client = ClientSocket;
+                    byte[] msgs = new byte[1024];
+                    int size = client.Receive(msgs);
+                    string clientMessage = Encoding.UTF8.GetString(msgs).TrimEnd(new char[] { (char)0 });
+                    client.Send(System.Text.Encoding.UTF8.GetBytes(clientMessage), 0, clientMessage.Length, SocketFlags.None);
+                    //client.Send(msgs, 0, size, SocketFlags.None);   
+                }
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            catch (ArgumentNullException e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
             }
         }
 
-        public static string Encrypt(string messageSent, string Cipher)
+        public string Encrypt(string messageSent, string Cipher)
         {
             using (var CryptoMD5 = new MD5CryptoServiceProvider())
             {
@@ -115,7 +130,7 @@ namespace CS4390_ServerChat_Server
             }
         }
 
-        public static string Decrypt(string encryptedMessage, string Cipher)
+        public string Decrypt(string encryptedMessage, string Cipher)
         {
             using (var CryptoMD5 = new MD5CryptoServiceProvider())
             {
