@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChatHistory.cs" />
+    <Compile Include="Encryption.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="TCPConnection.cs" />
     <Compile Include="UDPConnection.cs" />
