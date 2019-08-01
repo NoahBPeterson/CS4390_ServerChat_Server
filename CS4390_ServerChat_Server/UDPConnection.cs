@@ -12,10 +12,10 @@ namespace CS4390_ServerChat_Server
     public class UDPConnection
     {
         Dictionary<string, string> challengeAuthentication;
-        Dictionary<string, int> clientRandomCookies;
+        Dictionary<int, string> clientRandomCookies;
         Socket sock = null;
 
-        public UDPConnection(Dictionary<string, string> cipherKeys, Dictionary<string, int> clientCookies)
+        public UDPConnection(Dictionary<string, string> cipherKeys, Dictionary<int, string> clientCookies)
         {
             challengeAuthentication = cipherKeys;
             clientRandomCookies = clientCookies;
@@ -87,7 +87,7 @@ namespace CS4390_ServerChat_Server
                             string cookie_port = Encrypt(rand_cookie.ToString() + " " + 10021, serverChallenge); //cipher: rand+password, '+' is concatenation.
                             sock.SendTo(Encoding.UTF8.GetBytes(cookie_port), clientEndPoint);
                             Console.WriteLine("Rand_cookie + \" \" + 10021:"+rand_cookie + " " + 10021);
-                            clientRandomCookies[cID] = rand_cookie; //Rand_Cookie now added to dictionary accessible from driver function.
+                            clientRandomCookies[rand_cookie] = cID; //Rand_Cookie now added to dictionary accessible from driver function.
                             //return rand_cookie;
                         }
                         else     //Do not authenticate. Send AUTH_FAIL

@@ -12,7 +12,7 @@ namespace CS4390_ServerChat_Server
     class Program
     {
         Dictionary<string, string> challengeAuthentication = new Dictionary<string, string>();
-        Dictionary<string, int> clientCookie = new Dictionary<string, int>();
+        Dictionary<int, string> clientCookie = new Dictionary<int, string>();
 
         static void Main(string[] args)
         {
