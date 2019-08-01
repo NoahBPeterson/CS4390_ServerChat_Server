@@ -64,7 +64,7 @@ namespace CS4390_ServerChat_Server
                     //Make this global so we can remove user threads as people timeout?
                     TCPConnection user = new TCPConnection(privateKeys, clientCookies, ClientSocket, clientIDSocket,  clientID);
                     //Thread UserThreads = new Thread(new ThreadStart(() => User(clientSocket)));
-                    userThread = new Thread(() => user.User(clientID));
+                    userThread = new Thread(user.User);
                     userThread.Start();
                     send("CONNECTED");
                 }
@@ -87,7 +87,7 @@ namespace CS4390_ServerChat_Server
             return System.Text.Encoding.UTF8.GetString(msgFromServer, 0, size);
         }
 
-        public void User(string clientID)//(Socket Client)
+        public void User()//(Socket Client)
         {
             try
             {
