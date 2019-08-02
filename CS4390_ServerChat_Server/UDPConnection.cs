@@ -93,6 +93,7 @@ namespace CS4390_ServerChat_Server
                         else     //Do not authenticate. Send AUTH_FAIL
                         {
                             Console.WriteLine("FAIL! Client authentication: \"" + clientResponseString + "\" \n Our authentication: \"" + serverChallengeString);
+                            string fail = Encrypt("FAIL", serverChallenge);
                             sock.SendTo(Encoding.UTF8.GetBytes("FAIL"), clientEndPoint);
 
                         }
