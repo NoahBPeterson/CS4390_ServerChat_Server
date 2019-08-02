@@ -117,17 +117,14 @@ namespace CS4390_ServerChat_Server
                 {
                     string clientMessage = receive();
                     string[] split = stringSplit(clientMessage);
+                    if (logOff(clientMessage))
+                    {
+                        //send log off message
+                    }
                     if (chatting && split[0].Equals("CHAT"))
                     {
-                        if (logOff(clientMessage))
-                        {
-                            //send log off message
-                        }
-                        else
-                        {
-                            sendChat(sessionID+" "+clientID + ": " + split[1]);
-                            send(sessionID+" "+clientID + ": " + split[1]);
-                        }
+                        sendChat(sessionID+" "+clientID + ": " + split[1]);
+                        send(sessionID+" "+clientID + ": " + split[1]);
                     }
                     if (commandHistory(clientMessage) != null)
                     {
