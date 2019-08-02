@@ -18,6 +18,7 @@ namespace CS4390_ServerChat_Server
         IPEndPoint serverEndpoint;
         Socket ClientSocket;
         Socket ServerListener;
+        int sessionID;
         string clientID;
         bool chatting = false;
         string chattingWith;
@@ -124,8 +125,8 @@ namespace CS4390_ServerChat_Server
                         }
                         else
                         {
-                            sendChat(clientID + ": " + split[1]);
-                            send(clientID + ": " + split[1]);
+                            sendChat(sessionID+" "+clientID + ": " + split[1]);
+                            send(sessionID+" "+clientID + ": " + split[1]);
                         }
                     }
                     if (commandHistory(clientMessage) != null)
@@ -134,8 +135,8 @@ namespace CS4390_ServerChat_Server
                     }else if(commandChat(clientMessage)!=null)
                     {
                         clientB = commandChat(clientMessage);
-                        send("CHAT_STARTED " + clientB.clientID);
-                        sendChat("CHAT_STARTED " + clientID);
+                        send("CHAT_STARTED " + sessionID+" "+clientB.clientID);
+                        clientB.send("CHAT_STARTED " +sessionID+" "+ clientID);
                     }
                     else if(!chatting)
                     {
@@ -172,6 +173,14 @@ namespace CS4390_ServerChat_Server
                 Console.WriteLine("Requesting: " + clientID + " with clientB: \"" + firstSpace[1]+"\"");
                 ChatHistory chatHistory = new ChatHistory(clientID, firstSpace[1]);
                 string chats = chatHistory.chatHistory();
+                /*chats = "CHAT " + chats;
+                for(int i = 0; i < chats.Length; i++)
+                {
+                    if(chats[i]=='\n')
+                    {
+                        chats = chats.Substring(0, i) +"CHAT "+ chats.Substring(i);
+                    }
+                }*/
                 if(chats!=null)
                 {
                     return chats;
@@ -212,6 +221,8 @@ namespace CS4390_ServerChat_Server
             clientB.chatting = true;
             chattingWith = clientB.clientID;
             chatting = true;
+            sessionID = challenge();
+            clientB.sessionID = sessionID;
         }
         void tearConnection(TCPConnection clientB)
         {
@@ -221,13 +232,22 @@ namespace CS4390_ServerChat_Server
                 clientB.chatting = false;
                 chatting = false;
                 chattingWith = "";
+                sessionID = -1;
+                clientB.sessionID = -1;
             }
+        }
+        int challenge()
+        {
+            Random rng = new Random();
+            return rng.Next();
         }
 
         bool logOff(string command)
         {
-            if(command.ToLower().Equals("log off"))
+            if(command.ToLower().Equals("end_request"))
             {
+                send("END_NOTIF");
+                sendChat("END_NOTIF");
                 tearConnection(cIDtoTCP[chattingWith]);
                 return true;
             }
