@@ -75,7 +75,7 @@ namespace CS4390_ServerChat_Server
                         string serverChallenge;
                         challengeAuthentication.TryGetValue(cID, out serverChallenge); //Get challenge from hashmap that the client should have independently created
                         byte[] serverChallengeByte = challengeHash(serverChallenge);
-                        string serverChallengeString = Encoding.UTF8.GetString(serverChallengeByte);
+                        string serverChallengeString = Convert.ToBase64String(serverChallengeByte);
 
                         string clientResponseString = receiveString.Substring(responseStart + 1, receiveString.Length - (responseStart+1)).TrimEnd(new char[] { (char)0 });
 
